@@ -1,0 +1,7 @@
+<resources>
+    <color name="ic_bg">#FF6C3BFF</color>
+    <color name="kb_bg">#FF1B1824</color>
+    <color name="kb_bar">#FF14121B</color>
+    <color name="kb_cell">#FF2A2636</color>
+    <color name="kb_icon">#FFE6E0F5</color>
+</resources>

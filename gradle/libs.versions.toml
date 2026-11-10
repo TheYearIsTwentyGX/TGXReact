@@ -1,0 +1,27 @@
+[versions]
+agp = "9.1.1"
+kotlin = "2.4.10"
+activity = "1.13.0"
+compose-foundation = "1.11.2"
+compose-material3 = "1.4.0"
+compose-icons = "1.7.8"
+core = "1.18.0"
+recyclerview = "1.4.0"
+reorderable = "3.0.0"
+junit = "4.13.2"
+json = "20250517"
+
+[libraries]
+androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activity" }
+androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "core" }
+androidx-recyclerview = { module = "androidx.recyclerview:recyclerview", version.ref = "recyclerview" }
+compose-foundation = { module = "androidx.compose.foundation:foundation", version.ref = "compose-foundation" }
+compose-material3 = { module = "androidx.compose.material3:material3", version.ref = "compose-material3" }
+compose-icons = { module = "androidx.compose.material:material-icons-core", version.ref = "compose-icons" }
+reorderable = { module = "sh.calvin.reorderable:reorderable", version.ref = "reorderable" }
+junit = { module = "junit:junit", version.ref = "junit" }
+json = { module = "org.json:json", version.ref = "json" }
+
+[plugins]
+androidApplication = { id = "com.android.application", version.ref = "agp" }
+composeCompiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
