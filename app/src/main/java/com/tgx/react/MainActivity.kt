@@ -50,6 +50,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -225,6 +226,7 @@ private fun ManagerScreen(keyboard: KeyboardState, onOpenSettings: () -> Unit, o
                     SetupCard(keyboard, onOpenSettings, onPickKeyboard)
                 }
             }
+            item(span = { GridItemSpan(maxLineSpan) }, key = "height") { HeightCard() }
             if (items.isNotEmpty()) {
                 item(span = { GridItemSpan(maxLineSpan) }, key = "hint") {
                     Text(
@@ -290,6 +292,36 @@ private fun Thumbnail(r: Reaction) {
 }
 
 @Composable
+private fun HeightCard() {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    var height by remember { mutableStateOf(KeyboardPrefs.heightDp(context).toFloat()) }
+    val steps = (KeyboardPrefs.MAX_HEIGHT_DP - KeyboardPrefs.MIN_HEIGHT_DP) / 10 - 1
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        shape = RoundedCornerShape(18.dp),
+        modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp),
+    ) {
+        Column(Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Keyboard height", style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+                Text("${height.toInt()} dp", style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Slider(
+                value = height,
+                onValueChange = { height = it },
+                onValueChangeFinished = { KeyboardPrefs.setHeightDp(context, height.toInt()) },
+                valueRange = KeyboardPrefs.MIN_HEIGHT_DP.toFloat()..KeyboardPrefs.MAX_HEIGHT_DP.toFloat(),
+                steps = steps,
+            )
+            Text("Applies the next time the keyboard opens.", style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
+@Composable
 private fun SetupCard(state: KeyboardState, onOpenSettings: () -> Unit, onPickKeyboard: () -> Unit) {
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
@@ -312,7 +344,7 @@ private fun SetupCard(state: KeyboardState, onOpenSettings: () -> Unit, onPickKe
             }
             Spacer(Modifier.height(6.dp))
             Text(
-                "Tip: in the keyboard, the 🌐 button switches back to your normal keyboard.",
+                "Tip: use the keyboard button in your navigation bar to switch back to your normal keyboard.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

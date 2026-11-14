@@ -17,7 +17,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.ViewOutlineProvider
 import android.view.inputmethod.EditorInfo
-import android.view.inputmethod.InputMethodManager
 import android.widget.FrameLayout
 import android.widget.ImageButton
 import android.widget.ImageView
@@ -26,6 +25,8 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.inputmethod.EditorInfoCompat
 import androidx.core.view.inputmethod.InputConnectionCompat
 import androidx.core.view.inputmethod.InputContentInfoCompat
@@ -41,6 +42,7 @@ class ReactionKeyboardService : InputMethodService() {
     private lateinit var adapter: Adapter
     private lateinit var emptyView: TextView
     private lateinit var hintView: TextView
+    private lateinit var gridHolder: FrameLayout
     private val handler = Handler(Looper.getMainLooper())
 
     private fun dp(v: Int) = TypedValue.applyDimension(
@@ -50,8 +52,8 @@ class ReactionKeyboardService : InputMethodService() {
     override fun onCreateInputView(): View {
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setBackgroundColor(ContextCompat.getColor(context, R.color.kb_bg))
         }
+        val gridBg = ContextCompat.getColor(this, R.color.kb_bg)
 
         hintView = TextView(this).apply {
             setTextColor(0xFFB8B0CC.toInt())
@@ -59,10 +61,11 @@ class ReactionKeyboardService : InputMethodService() {
             setPadding(dp(12), dp(6), dp(12), 0)
             text = "This app doesn't accept images — tapping copies to clipboard"
             visibility = View.GONE
+            setBackgroundColor(gridBg)
         }
         root.addView(hintView)
 
-        val gridHolder = FrameLayout(this)
+        gridHolder = FrameLayout(this).apply { setBackgroundColor(gridBg) }
         val span = (resources.displayMetrics.widthPixels / dp(92)).coerceAtLeast(3)
         adapter = Adapter((resources.displayMetrics.widthPixels / span)) { insert(it) }
         val grid = RecyclerView(this).apply {
@@ -80,7 +83,7 @@ class ReactionKeyboardService : InputMethodService() {
             textSize = 15f
         }
         gridHolder.addView(emptyView, FrameLayout.LayoutParams(-1, -1))
-        root.addView(gridHolder, LinearLayout.LayoutParams(-1, dp(250)))
+        root.addView(gridHolder, LinearLayout.LayoutParams(-1, dp(KeyboardPrefs.heightDp(this))))
 
         val bar = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -94,15 +97,12 @@ class ReactionKeyboardService : InputMethodService() {
             setBackgroundResource(R.drawable.kb_button_bg)
             layoutParams = LinearLayout.LayoutParams(dp(48), dp(48))
         }
-        val globe = button(R.drawable.ic_kb_globe, "Switch keyboard").apply {
-            setOnClickListener { switchKeyboard() }
-            setOnLongClickListener {
-                getSystemService(InputMethodManager::class.java).showInputMethodPicker(); true
-            }
-        }
         val edit = button(R.drawable.ic_kb_edit, "Manage reactions").apply {
             setOnClickListener {
-                startActivity(Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                startActivity(
+                    Intent(context, MainActivity::class.java)
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                )
             }
         }
         val title = TextView(this).apply {
@@ -113,8 +113,17 @@ class ReactionKeyboardService : InputMethodService() {
             layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
         }
         val backspace = button(R.drawable.ic_kb_backspace, "Backspace").apply { setupRepeatingDelete(this) }
-        bar.addView(globe); bar.addView(edit); bar.addView(title); bar.addView(backspace)
+        bar.addView(edit); bar.addView(title); bar.addView(backspace)
         root.addView(bar, LinearLayout.LayoutParams(-1, dp(52)))
+
+        // The keyboard window is edge-to-edge on Android 15+: the system draws its own hide and
+        // switch-keyboard buttons in the navigation bar, so keep our content above it.
+        root.setBackgroundColor(ContextCompat.getColor(this, R.color.kb_bar))
+        ViewCompat.setOnApplyWindowInsetsListener(root) { v, insets ->
+            val nav = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
+            v.setPadding(nav.left, 0, nav.right, nav.bottom)
+            insets
+        }
         return root
     }
 
@@ -126,11 +135,9 @@ class ReactionKeyboardService : InputMethodService() {
         val acceptsImages = info != null && EditorInfoCompat.getContentMimeTypes(info)
             .any { ClipDescription.compareMimeTypes("image/png", it) || ClipDescription.compareMimeTypes("image/gif", it) }
         hintView.visibility = if (acceptsImages || items.isEmpty()) View.GONE else View.VISIBLE
-    }
-
-    private fun switchKeyboard() {
-        if (!switchToPreviousInputMethod() && !switchToNextInputMethod(false)) {
-            getSystemService(InputMethodManager::class.java).showInputMethodPicker()
+        val height = dp(KeyboardPrefs.heightDp(this))
+        if (gridHolder.layoutParams.height != height) {
+            gridHolder.layoutParams = gridHolder.layoutParams.apply { this.height = height }
         }
     }
 
